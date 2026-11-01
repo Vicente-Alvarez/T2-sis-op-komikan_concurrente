@@ -6,11 +6,11 @@
 
 typedef struct {
 int id_mesa;
-int id_pieza; // 0 para el Puma, 1 a 12 para los Perros
+int id_pieza; // 0 para Puma, 1 a 12 para Perros
 Tablero* tablero;
-sem_t* sem_turno;      // semaforo que espera esta pieza para jugar
-sem_t* sem_siguiente;  // semaforo que activa la pieza para darle la mano al otro
-bool* juego_activo;    // bandera global para saber si la partida sigue corriendo
+sem_t* sem_turno;
+sem_t* sem_siguiente;
+bool* juego_activo;
 } ArgPieza;
 
 void* hilo_puma(void* arg);

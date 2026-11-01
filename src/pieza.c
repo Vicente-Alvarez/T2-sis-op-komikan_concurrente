@@ -28,7 +28,7 @@ int destino_elegido = -1;
 for (int i = 0; i < TOTAL_CASILLAS; i++) {
 if (movimiento_valido_puma(t, t->pos_puma, i, &captura)) {
 destino_elegido = i;
-if (captura != -1) break;
+if (captura != -1) break; // Prioriza comerse un perro
 }
 }
 
@@ -41,9 +41,9 @@ t->pos_puma = destino_elegido;
 if (captura != -1) {
 t->casillas[captura].tipo = CASILLA_VACIA;
 t->perros_capturados++;
-registrar_evento(datos->id_mesa, "Puma se comio un Perro.");
+registrar_evento(datos->id_mesa, "Puma capturo un Perro.");
 } else {
-registrar_evento(datos->id_mesa, "Puma se movio.");
+registrar_evento(datos->id_mesa, "Puma se ha movido.");
 }
 
 imprimir_tablero_consola(t, datos->id_mesa);
@@ -55,7 +55,7 @@ registrar_evento(datos->id_mesa, "¡Puma capturo a los 12 Perros! Gana el Puma."
 }
 
 pthread_mutex_unlock(&t->lock_tablero);
-usleep(100000);
+usleep(100000); // Pausa de 100ms
 
 sem_post(datos->sem_siguiente);
 }
@@ -88,12 +88,12 @@ if (movido) break;
 }
 
 if (movido) {
-registrar_evento(datos->id_mesa, "Un Perro se movio.");
+registrar_evento(datos->id_mesa, "Un Perro se ha movido.");
 imprimir_tablero_consola(t, datos->id_mesa);
 }
 
 pthread_mutex_unlock(&t->lock_tablero);
-usleep(100000);
+usleep(100000); // Pausa de 100ms
 
 sem_post(datos->sem_siguiente);
 }

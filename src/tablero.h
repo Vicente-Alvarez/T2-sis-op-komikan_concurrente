@@ -4,27 +4,24 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-// 25 casillas del tablero mas la 25 del trono
-#define TOTAL_CASILLAS 26 
+// 25 casillas grilla 5x5 + 3 casillas del trono (25, 26, 27) = 28 casillas
+#define TOTAL_CASILLAS 28
 #define CASILLA_VACIA 0
 #define CASILLA_PUMA 1
 #define CASILLA_PERRO 2
 
-// estructura de cada casilla del tablero
 typedef struct {
 int id;
-int tipo; // vacia, puma o perro
+int tipo; // VACIA, PUMA o PERRO
 } Casilla;
 
-// estado general del tablero por mesa
 typedef struct {
 Casilla casillas[TOTAL_CASILLAS];
 int pos_puma;
 int perros_capturados;
-pthread_mutex_t lock_tablero; // mutex global para que no se pisen al mover
+pthread_mutex_t lock_tablero; // Exclusión mutua para la mesa
 } Tablero;
 
-// funciones del tablero
 void inicializar_tablero(Tablero* t);
 void destruir_tablero(Tablero* t);
 bool es_adyacente(int origen, int destino);
