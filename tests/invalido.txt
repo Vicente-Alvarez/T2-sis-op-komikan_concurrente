@@ -1,0 +1,2 @@
+delay_min_ms=500
+delay_max_ms=100

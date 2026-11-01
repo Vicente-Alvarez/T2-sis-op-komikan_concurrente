@@ -1,0 +1,9 @@
+tablero:
+      P
+    .   .
+D D D D X
+D D D D D
+. . . . .
+. . . . .
+. . . . .
+fin

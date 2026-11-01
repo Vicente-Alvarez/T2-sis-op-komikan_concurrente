@@ -1,0 +1,4 @@
+tablero:
+D D D
+. . .
+fin

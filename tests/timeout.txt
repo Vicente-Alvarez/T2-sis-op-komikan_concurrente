@@ -1,0 +1,7 @@
+delay_min_ms=50
+delay_max_ms=300
+seed=5
+llegada_min_ms=0
+llegada_max_ms=5
+max_partida_ms=150
+log_tablero_ms=5000

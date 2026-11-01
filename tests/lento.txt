@@ -1,0 +1,6 @@
+delay_min_ms=100
+delay_max_ms=300
+seed=3
+llegada_min_ms=5
+llegada_max_ms=20
+log_tablero_ms=500
