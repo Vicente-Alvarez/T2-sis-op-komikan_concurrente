@@ -3,7 +3,10 @@
 
 #include "tablero.h"
 
-void imprimir_tablero_consola(Tablero* t, int id_mesa);
-void registrar_evento(int id_mesa, const char* mensaje);
+// Imprime el tablero de forma limpia sin mezclar mensajes
+void imprimir_tablero_consola(const Tablero* t, int id_mesa);
 
-#endif // LOG_H
+// Formatea eventos con marca de tiempo y mesa
+void registrar_evento(int id_mesa, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
+
+#endif

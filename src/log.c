@@ -1,29 +1,44 @@
 #include "log.h"
+
+#include <stdarg.h>
 #include <stdio.h>
 
-void imprimir_tablero_consola(Tablero* t, int id_mesa) {
-printf("\n MESA %d: ESTADO DEL TABLERO \n", id_mesa);
+#include "bitacora.h"
 
-// Grilla principal 5x5 (0 a 24)
-for (int i = 0; i < 25; i++) {
-char simbolo = '.';
-if (t->casillas[i].tipo == CASILLA_PUMA) simbolo = 'P';
-else if (t->casillas[i].tipo == CASILLA_PERRO) simbolo = 'd';
-
-printf("%c ", simbolo);
-if ((i + 1) % 5 == 0) printf("\n");
+// Traduce el entero a un caracter representativo (. P d)
+static char simbolo(const Tablero* t, int casilla) {
+switch (t->casillas[casilla].tipo) {
+case CASILLA_PUMA: return 'P';
+case CASILLA_PERRO: return 'd';
+default: return '.';
+}
 }
 
-// Representación del Trono (Casillas 25, 26 y 27)
-char t25 = (t->casillas[25].tipo == CASILLA_PUMA) ? 'P' : (t->casillas[25].tipo == CASILLA_PERRO) ? 'd' : '.';
-char t26 = (t->casillas[26].tipo == CASILLA_PUMA) ? 'P' : (t->casillas[26].tipo == CASILLA_PERRO) ? 'd' : '.';
-char t27 = (t->casillas[27].tipo == CASILLA_PUMA) ? 'P' : (t->casillas[27].tipo == CASILLA_PERRO) ? 'd' : '.';
-
-printf("Trono: [Izq: %c] [Der: %c] [Cuspite: %c]\n", t25, t26, t27);
-printf("Perros capturados: %d/12\n", t->perros_capturados);
-printf("n\n");
+// Arma el texto del tablero y lo manda a la bitacora de un golpe
+void imprimir_tablero_consola(const Tablero* t, int id_mesa) {
+char buf[320];
+int n = snprintf(buf, sizeof buf,
+"TABLERO (jugada #%lu | capturados %d/%d | perros en juego %d)\n"
+" %c\n"
+" %c %c\n",
+t->movimientos, t->perros_capturados, t->umbral_victoria,
+t->perros_iniciales - t->perros_capturados,
+simbolo(t, CASILLA_CUSPIDE), simbolo(t, CASILLA_TRONO_IZQ), simbolo(t, CASILLA_TRONO_DER));
+for (int f = 0; f < GRILLA_FILAS && n > 0 && n < (int)sizeof buf - 14; f++) {
+n += snprintf(buf + n, sizeof buf - (size_t)n, " ");
+for (int c = 0; c < GRILLA_COLS; c++)
+n += snprintf(buf + n, sizeof buf - (size_t)n, "%c ", simbolo(t, f * GRILLA_COLS + c));
+if (f + 1 < GRILLA_FILAS) n += snprintf(buf + n, sizeof buf - (size_t)n, "\n");
+}
+bitacora_evento(id_mesa, "%s", buf);
 }
 
-void registrar_evento(int id_mesa, const char* mensaje) {
-printf("[Mesa %d] %s\n", id_mesa, mensaje);
+// Registra eventos generales en el log
+void registrar_evento(int id_mesa, const char* fmt, ...) {
+char buf[300];
+va_list ap;
+va_start(ap, fmt);
+vsnprintf(buf, sizeof buf, fmt, ap);
+va_end(ap);
+bitacora_evento(id_mesa, "%s", buf);
 }
