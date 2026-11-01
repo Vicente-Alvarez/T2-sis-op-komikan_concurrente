@@ -15,11 +15,11 @@ Requiere Linux (o WSL), `gcc` y `make`. Opcional: `valgrind`.
 
 | Instrucciones|
 
- `make`  Compila `./torneo` (`gcc -Wall -Wextra -std=c17 -pthread`)
- `make test`  Corre `tests/run_tests.sh` (incluye valgrind si está instalado)
- `make valgrind` | Revisa fugas con valgrind
- `make debug` / `make tsan`  Compila con ASan+UBSan / ThreadSanitizer 
- `make clean`  Limpia 
+| `make`  Compila `./torneo` (`gcc -Wall -Wextra -std=c17 -pthread`)|
+| `make test`  Corre `tests/run_tests.sh` (incluye valgrind si está instalado)|
+| `make valgrind` | Revisa fugas con valgrind|
+| `make debug` / `make tsan`  Compila con ASan+UBSan / ThreadSanitizer |
+| `make clean`  Limpia |
 
 Ejemplos:
 ```bash
