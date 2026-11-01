@@ -19,7 +19,7 @@ Requiere Linux (o WSL), `gcc` y `make`. Opcional: `valgrind`.
  `make test`  Corre `tests/run_tests.sh` (incluye valgrind si está instalado)
  `make valgrind` | Revisa fugas con valgrind
  `make debug` / `make tsan`  Compila con ASan+UBSan / ThreadSanitizer 
- `make clean`  Limpia
+ `make clean`  Limpia (make clean && make para limpiar y volver a ejecutar inmediatamente)
 ```
 Ejemplos:
 ```bash
