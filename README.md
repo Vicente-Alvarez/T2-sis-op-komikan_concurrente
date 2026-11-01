@@ -14,6 +14,7 @@ Al terminar imprime una línea `RESUMEN ...` con las estadísticas (partidas, re
 Requiere Linux (o WSL), `gcc` y `make`. Opcional: `valgrind`.
 
 | Instrucciones|
+
  `make`  Compila `./torneo` (`gcc -Wall -Wextra -std=c17 -pthread`)
  `make test`  Corre `tests/run_tests.sh` (incluye valgrind si está instalado)
  `make valgrind` | Revisa fugas con valgrind
