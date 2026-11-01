@@ -1,0 +1,37 @@
+# config.txt - configuración de ejemplo del torneo
+# Formato: clave=valor. '#' inicia un comentario (fuera del bloque tablero).
+
+# Retardo de cada ficha entre decisiones (ms)
+delay_min_ms=50
+delay_max_ms=300
+
+# Semilla aleatoria (reproducibilidad). 'auto' o ausente: se genera y se imprime.
+seed=42
+
+# Llegada de clientes al servidor (ms entre llegadas)
+llegada_min_ms=0
+llegada_max_ms=200
+
+# Fallos simulados de jugadores (abandono a mitad de partida)
+prob_fallo=0.0
+fallo_min_ms=300
+fallo_max_ms=3000
+
+# Tiempo máximo por partida (ms). 0 = sin límite. Si se excede, empate.
+max_partida_ms=30000
+
+# 0 = las piezas imprimen el tablero en cada jugada; >0 = el juez lo imprime cada X ms
+log_tablero_ms=1000
+
+# Disposición inicial (opcional). 28 símbolos en orden de lectura:
+#   1 (cúspide T) + 2 (trono izquierdo y derecho) + 25 (grilla 5x5).
+#   P = puma (exactamente 1), D = perro (1 a 12), . = casilla libre. Los espacios no cuentan.
+tablero:
+      .
+    .   .
+D D D D D
+D D D D D
+D D P . .
+. . . . .
+. . . . .
+fin
