@@ -1,26 +1,52 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -std=c17 -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE -g
-LIBS = -pthread
+CC      = gcc
+WARN    = -Wall -Wextra -std=c17
+OPT     = -O2 -g
+SAN     =
+LDLIBS  = -pthread
 
-SRC_DIR = src
-OBJ_DIR = obj
-TARGET = torneo
+SRC_P2  = src/main.c src/config.c src/matchmaker.c src/cliente.c src/mesa.c src/bitacora.c
+SRC_P1  = src/tablero.c src/pieza.c src/log.c
 
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
+BUILD   = build
+OBJ     = $(patsubst src/%.c,$(BUILD)/%.o,$(SRC_P2) $(SRC_P1))
+DEPS    = $(OBJ:.o=.d)
 
-all: $(TARGET)
+.PHONY: all debug tsan test valgrind clean help
 
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+all: torneo
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+torneo: $(OBJ)
+	$(CC) $(WARN) $(OPT) $(SAN) $^ -o $@ $(LDLIBS)
 
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+$(BUILD)/%.o: src/%.c | $(BUILD)
+	$(CC) $(WARN) $(OPT) $(SAN) -MMD -MP -Isrc -pthread -c $< -o $@
+
+$(BUILD):
+	mkdir -p $(BUILD)
+
+debug:
+	$(MAKE) clean
+	$(MAKE) all OPT="-O0 -g" SAN="-fsanitize=address,undefined -fno-omit-frame-pointer"
+
+tsan:
+	$(MAKE) clean
+	$(MAKE) all OPT="-O1 -g" SAN="-fsanitize=thread"
+
+BIN ?= ./torneo
+test: $(BIN)
+	bash tests/run_tests.sh $(BIN)
+
+valgrind: $(BIN)
+	valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=99 \
+	  $(BIN) 6 2 tests/rapido.txt > /dev/null
 
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET)
+	rm -rf $(BUILD) torneo
 
-.PHONY: all clean
+help:
+	@echo "make            compila ./torneo"
+	@echo "make test       pruebas del servidor (tests/run_tests.sh)"
+	@echo "make debug|tsan compila con ASan+UBSan / ThreadSanitizer"
+	@echo "make valgrind   revisa fugas con valgrind"
+
+-include $(DEPS)
