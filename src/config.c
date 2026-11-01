@@ -21,7 +21,7 @@ void config_por_defecto(config_t *c) {
     c->prob_fallo = 0.0;
     c->fallo_min_ms = 200;
     c->fallo_max_ms = 2000;
-    c->max_partida_ms = 0;
+    c->max_partida_ms = 30000;
     c->log_tablero_ms = 1000;
     c->usa_disposicion = false;
 }

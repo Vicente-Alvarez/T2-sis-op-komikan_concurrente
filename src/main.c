@@ -10,6 +10,7 @@
 #include "config.h"
 #include "bitacora.h"
 #include "matchmaker.h"
+#include "tablero.h"
 
 #define MAX_CLIENTES 1000000
 
@@ -78,6 +79,7 @@ int main(int argc, char **argv) {
     config_t cfg;
     config_por_defecto(&cfg);
     if (argc == 4 && config_cargar(&cfg, argv[3]) != 0) return 2;
+    if (tablero_validar_disposicion(&cfg) != 0) return 2;
 
     if (bitacora_iniciar(NULL) != 0) {
         fprintf(stderr, "Error: no se pudo iniciar el log\n");

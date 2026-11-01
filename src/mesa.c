@@ -13,15 +13,11 @@
 #include "util.h"
 
 #define JUEZ_POLL_MS 20
-#define NUM_PIEZAS 13
-#define CAPTURAS_VICTORIA_PUMA 6
+#define NUM_PIEZAS (1 + MAX_PERROS)
 
 typedef struct {
     Tablero tablero;
     bool tablero_listo;
-    bool juego_activo;
-    sem_t turnos[NUM_PIEZAS];
-    int sems_listos;
     ArgPieza args[NUM_PIEZAS];
     pthread_t hilos[NUM_PIEZAS];
     int lanzados;
@@ -74,45 +70,36 @@ void mesa_notificar_abandono(mesa_t *m, cliente_t *c) {
 }
 
 static void partida_detener(partida_t *p) {
-    pthread_mutex_lock(&p->tablero.lock_tablero);
-    p->juego_activo = false;
-    pthread_mutex_unlock(&p->tablero.lock_tablero);
-
-    for (int i = 0; i < p->sems_listos; i++) sem_post(&p->turnos[i]);
+    if (p->tablero_listo) tablero_terminar(&p->tablero, JUEGO_DETENIDO);
     for (int i = 0; i < p->lanzados; i++) pthread_join(p->hilos[i], NULL);
     p->lanzados = 0;
 }
 
 static void partida_destruir(partida_t *p) {
     if (!p) return;
-    for (int i = 0; i < p->sems_listos; i++) sem_destroy(&p->turnos[i]);
     if (p->tablero_listo) destruir_tablero(&p->tablero);
     free(p);
 }
 
-static partida_t *partida_iniciar(int id_mesa) {
+static partida_t *partida_iniciar(const mesa_t *m) {
     partida_t *p = calloc(1, sizeof *p);
     if (!p) return NULL;
 
-    inicializar_tablero(&p->tablero);
-    p->tablero_listo = true;
-    p->juego_activo = true;
-
-    for (int i = 0; i < NUM_PIEZAS; i++) {
-        if (sem_init(&p->turnos[i], 0, 0) != 0) {
-            partida_destruir(p);
-            return NULL;
-        }
-        p->sems_listos++;
+    if (inicializar_tablero(&p->tablero, m->cfg) != 0) {
+        free(p);
+        return NULL;
     }
+    p->tablero_listo = true;
 
-    for (int i = 0; i < NUM_PIEZAS; i++) {
-        p->args[i].id_mesa = id_mesa;
+    const unsigned int semilla = config_derivar_semilla(m->cfg->seed, 2, (unsigned int)m->partida);
+    const int total = 1 + p->tablero.perros_iniciales;
+
+    for (int i = 0; i < total; i++) {
+        p->args[i].id_mesa = m->id;
         p->args[i].id_pieza = i;
         p->args[i].tablero = &p->tablero;
-        p->args[i].sem_turno = &p->turnos[i];
-        p->args[i].sem_siguiente = &p->turnos[(i + 1) % NUM_PIEZAS];
-        p->args[i].juego_activo = &p->juego_activo;
+        p->args[i].cfg = m->cfg;
+        p->args[i].semilla = config_derivar_semilla(semilla, 3, (unsigned int)i);
         if (pthread_create(&p->hilos[i], NULL, i == 0 ? hilo_puma : hilo_perro, &p->args[i]) != 0) {
             partida_detener(p);
             partida_destruir(p);
@@ -120,24 +107,22 @@ static partida_t *partida_iniciar(int id_mesa) {
         }
         p->lanzados++;
     }
-
-    sem_post(&p->turnos[0]);
     return p;
 }
 
-static bool piezas_terminaron(partida_t *p) {
-    pthread_mutex_lock(&p->tablero.lock_tablero);
-    bool fin = !p->juego_activo;
-    pthread_mutex_unlock(&p->tablero.lock_tablero);
-    return fin;
+static mesa_res_t res_de_estado(estado_juego_t e, bool *real) {
+    *real = true;
+    if (e == JUEGO_GANA_PUMA)   return MR_GANA_PUMA;
+    if (e == JUEGO_GANA_PERROS) return MR_GANA_PERROS;
+    *real = false;
+    return MR_ERROR;
 }
 
-static mesa_res_t juez_esperar_fin(mesa_t *m, partida_t *p, bool *por_piezas) {
+static mesa_res_t juez_esperar_fin(mesa_t *m, partida_t *p) {
     const bool hay_limite = m->cfg->max_partida_ms > 0;
     const long limite = util_ms_monotonico() + m->cfg->max_partida_ms;
     const int periodo = m->cfg->log_tablero_ms;
     long prox_print = util_ms_monotonico() + periodo;
-    *por_piezas = false;
 
     for (;;) {
         pthread_mutex_lock(&m->mtx);
@@ -157,10 +142,10 @@ static mesa_res_t juez_esperar_fin(mesa_t *m, partida_t *p, bool *por_piezas) {
             prox_print += periodo;
         }
 
-        if (piezas_terminaron(p)) {
-            *por_piezas = true;
-            return MR_ERROR;
-        }
+        bool real;
+        mesa_res_t r = res_de_estado(tablero_estado(&p->tablero), &real);
+        if (real) return r;
+
         if (ab) {
             cliente_t *otro = (ab == m->puma) ? m->perros : m->puma;
             if (!cliente_conectado(otro)) return MR_ERROR;
@@ -198,16 +183,16 @@ static void *juez_hilo(void *arg) {
     bitacora_evento(m->id, "JUEZ: inicia partida #%d  Puma=cliente %d  Perros=cliente %d",
                     m->partida, m->puma->id, m->perros->id);
 
-    partida_t *p = partida_iniciar(m->id);
+    partida_t *p = partida_iniciar(m);
     if (!p) {
         bitacora_evento(m->id, "JUEZ: no se pudo crear el tablero o lanzar las piezas");
     } else {
-        bool por_piezas;
-        res = juez_esperar_fin(m, p, &por_piezas);
+        res = juez_esperar_fin(m, p);
         partida_detener(p);
 
-        if (por_piezas)
-            res = (p->tablero.perros_capturados >= CAPTURAS_VICTORIA_PUMA) ? MR_GANA_PUMA : MR_GANA_PERROS;
+        bool real;
+        mesa_res_t final = res_de_estado(tablero_estado(&p->tablero), &real);
+        if (real) res = final;
         bitacora_evento(m->id, "JUEZ: fin de la partida -> %s", mesa_res_str(res));
 
         imprimir_tablero_consola(&p->tablero, m->id);
